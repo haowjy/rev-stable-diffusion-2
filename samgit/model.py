@@ -31,7 +31,7 @@ class ImgObjEncoder(nn.Module):
         self.image_encoder = image_encoder
         self.top_n_bbox = top_n_bbox
         self.object_projection = create_projecton_layer(
-            visual_projection_type='linearLn',
+            visual_projection_type=visual_projection_type,
             visual_feature_size=visual_feature_size,
             textual_feature_size=textual_feature_size,
         )
@@ -47,6 +47,11 @@ class ImgObjEncoder(nn.Module):
         for b in range(len(batch_image_crops)): # batch
             # print(self.image_encoder)
             # print(batch_image_crops[b].device)
+            if batch_image_crops[b] is None:
+                HARD_IMG_FEATURE_SIZE = 2
+                batch_image_crop_features.append(torch.zeros((self.top_n_bbox*HARD_IMG_FEATURE_SIZE, self.visual_feature_size), device="cuda"))
+                continue
+            
             image_crop_features = self.image_encoder(batch_image_crops[b].to(device='cuda')) # idk why but it cuda has to be here
             # print("image_crop_features", image_crop_features.shape)
             img_feature_size = image_crop_features.shape[1]
@@ -59,10 +64,11 @@ class ImgObjEncoder(nn.Module):
             img_feature_size * self.top_n_bbox
             # print("image_crop_features", image_crop_features.shape)
             if top_n < self.top_n_bbox:
-                padding = torch.zeros((self.top_n_bbox - top_n)*img_feature_size, self.visual_feature_size, device=batch_image_crop_features[0].device)
+                padding = torch.zeros((self.top_n_bbox - top_n)*img_feature_size, self.visual_feature_size, device="cuda")
                 image_crop_features = torch.cat([padding, image_crop_features], dim=0)
             # print("image_crop_features", image_crop_features.shape)
             batch_image_crop_features.append(image_crop_features)
+            
             
         batch_image_crop_features = torch.stack(batch_image_crop_features, dim=0)
         

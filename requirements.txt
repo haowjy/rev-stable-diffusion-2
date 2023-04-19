@@ -1,4 +1,3 @@
-segment_anything
 opencv-python 
 pycocotools 
 matplotlib 
@@ -8,11 +7,9 @@ pycocoevalcap
 tqdm
 pyyaml
 torch
-azfuse
 torchvision
 transformers
 boto3
-generativeimage2text
 
 pandas
 fastparquet

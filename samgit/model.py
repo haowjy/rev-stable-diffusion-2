@@ -1,6 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 # Modified by Jimmy Yao from https://github.com/microsoft/GenerativeImage2Text/blob/main/generativeimage2text/model.py
 
+from typing import List
+
 import torch
 import torch.nn as nn
 from generativeimage2text.layers.decoder import (create_projecton_layer)
@@ -40,7 +42,7 @@ class ImgObjEncoder(nn.Module):
         self.visual_feature_size = visual_feature_size
         self.textual_feature_size = textual_feature_size
     
-    def forward(self, batch, batch_image_crops: list[torch.Tensor]):
+    def forward(self, batch, batch_image_crops: List[torch.Tensor]):
         # batch_image_crops = [batch, top_n_bbox, 3, 24, 24]
         # batch_size = len(batch)
         image_features = self.image_encoder(batch)

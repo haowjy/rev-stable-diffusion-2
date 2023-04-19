@@ -2,7 +2,7 @@
 # Modified by Jimmy Yao from https://github.com/microsoft/GenerativeImage2Text/blob/main/generativeimage2text/inference.py
 
 from generativeimage2text.process_image import load_image_by_pil
-from generativeimage2text.torch_common import torch_load, load_state_dict
+from generativeimage2text.torch_common import load_state_dict
 
 from transformers import BertTokenizer
 
@@ -40,7 +40,7 @@ def prepare_model(pretrained_path, half=True):
         "top_n_bbox": 4,
     }
     model = get_samgit_model(tokenizer, param)
-    checkpoint = torch_load(pretrained_path)['model_state_dict']
+    checkpoint = torch.load(pretrained_path)['model']
     load_state_dict(model, checkpoint)
     model.cuda()
     # if half:
@@ -117,5 +117,18 @@ def forward(model, mask_generator, tokenizer, param, image_files, prefix='', hal
             
             # cap = tokenizer.decode(result['predictions'][0].tolist(), skip_special_tokens=True)
     return result
+
+import os
+import pandas as pd
+
+def main():
+    model, mask_generator, tokenizer, param = prepare_model('../output/SAMGIT/epoch1/model.pt')
+    
+    PART1_IMGS_PATH = "../datasets/sampleeval"
+    df = pd.read_csv(os.path.join("prompts.csv"))
+    img_paths = [os.path.join(PART1_IMGS_PATH, df.iloc[idx]['imgId']+".png") for idx in range(len(df))]
+    
+    result = forward(model, mask_generator, tokenizer, param, image_files=img_paths)
+    print(result['predictions'][0].tolist())
 
 # TODO: https://github.com/salaniz/pycocoevalcap - submit to coco metrics

@@ -1,11 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 # Modified by Jimmy Yao from https://github.com/microsoft/GenerativeImage2Text/blob/main/generativeimage2text/train.py
 
-# add to path
-import sys
-if '../' not in sys.path:
-    sys.path.insert(0, '../')
-
 from pynvml import *
 
 def get_gpu_utilization():
@@ -26,6 +21,7 @@ from generativeimage2text.train import (get_image_transform, get_transform_image
                                         get_inception_train_transform, 
                                         get_data, collate_fn, recursive_to_device)
 from generativeimage2text.common import Config
+from generativeimage2text.torch_common import load_state_dict
 
 from transformers import BertTokenizer
 
@@ -60,7 +56,7 @@ def get_small_transform_vit_default(cfg, crop=24):
     )
     return transform
 
-def prepare_model(half=True):
+def prepare_model(pretrained_path=None, half=True):
     cfg = {
         'crop_region_extend_in_datatransform': 4,
         'data_normalize': 'clip',
@@ -82,11 +78,20 @@ def prepare_model(half=True):
         "top_n_bbox": 4,
     }
     model = get_samgit_model(tokenizer, param)
+    
+    # from pre-trained model
+    if pretrained_path is not None:
+        checkpoint = torch.load(pretrained_path)['model']
+        load_state_dict(model, checkpoint)
+        
     # if half:
     #     model.half()
     model.train()
     model.cuda()
     
+    param = {
+        "top_n_bbox": 4,
+    }
     # preprocess object crops with sam
     sam = sam_model_registry[param.get("sam_model_type", "vit_h")](checkpoint=param.get("sam_checkpoint", "../models/sam_vit_h_4b8939.pth")).half()
     # if half:
@@ -165,12 +170,25 @@ class DiffusionDBDataset(Dataset):
         return image_file, prompt
     
 import logging
-logging.basicConfig(filename='train.log', encoding='utf-8', level=logging.DEBUG)
+logging.basicConfig(filename='train.info.log', encoding='utf-8', level=logging.INFO)
 
-BATCH_SIZE = 32
+import numpy as np
+import random
+
+# set seeds
+np.random.seed(42)
+torch.manual_seed(42)
+random.seed(42)
+
+BATCH_SIZE = 128
 WORKERS = 2
 
 LR = 5e-5
+
+SAVE_STEPS = 200
+
+PRETRAINED_PATH = "output/GIT_BASE/snapshot/model.pt"
+MODEL_NAME = "SAMGIT"
     
 def main():
     # get data
@@ -182,7 +200,7 @@ def main():
     df_train = df[100:]
 
     # 1 epoch
-    model, mask_generator, tokenizer, cfg, param = prepare_model(half=True)
+    model, mask_generator, tokenizer, cfg, param = prepare_model(pretrained_path=PRETRAINED_PATH, half=True)
     model.train()
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=LR)
@@ -201,19 +219,28 @@ def main():
     for batch in pbar:
         image_files, captions = batch
         
+        logging.info(f"memory_allocated: {torch.cuda.memory_allocated()/(1024**2)} MB, max_memory_allocated: {torch.cuda.max_memory_allocated()/(1024**2)} MB")
         loss_dict = forward(model, mask_generator, tokenizer, cfg, param, image_files, captions, half=True)
         loss = sum(loss_dict.values())
-        logging.info(loss)
-        train_losses.append(loss)
         
         scaler.scale(loss).backward()
         scaler.step(optimizer)
         scaler.update()
 
         optimizer.zero_grad()
-        pbar.set_description(f"[step {pbar.n}] loss: {loss:.4f}")
-
-
+        
+        train_losses.append(loss.detach().cpu().numpy())
+        logging.info(f"[step {pbar.n + 1}] loss: {loss.detach().cpu().numpy():.4f}")
+        pbar.set_description(f"[step {pbar.n + 1}] loss: {loss.detach().cpu().numpy():.4f}")
+        
+        if pbar.n + 1 % SAVE_STEPS == 0:
+            torch.save({
+                'epoch': 1,
+                'model': model.state_dict(),
+                'optimizer': optimizer.state_dict(),
+                'losses': [train_losses],
+                }, f"output/{MODEL_NAME}/epoch{1}-step{pbar.n+1}/model.pt")
+        
     print("EVAL")
     model.eval()
     eval_losses = []
@@ -223,16 +250,16 @@ def main():
         image_files, captions = batch
         
         loss = forward(model, mask_generator, tokenizer, cfg, param, image_files, captions)
-        eval_losses.append(loss)
+        eval_losses.append(loss.detach().cpu().numpy())
     
     # save model dict and loss
 
     torch.save({
                 'epoch': 1,
-                'model_state_dict': model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
+                'model': model.state_dict(),
+                'optimizer': optimizer.state_dict(),
                 'losses': [train_losses],
-                }, f"checkpoint-{1}.pt")
+                }, f"output/{MODEL_NAME}/epoch{1}/model.pt")
     
 
 if __name__ == "__main__":

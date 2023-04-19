@@ -136,3 +136,5 @@ datasets/diffusiondb2m/*
 
 notebooks/output/*
 notebooks/checkpoints/*
+
+output/clip/*

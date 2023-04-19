@@ -33,8 +33,8 @@ def get_image_transform(crop_size=224):
     transforms = Compose(trans)
     return transforms
 
-def prepare_model(pretrained_path, sam_model_type="vit_h", sam_checkpoint = "../models/sam_vit_h_4b8939.pth", half=True):
-    tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True)
+def prepare_model(pretrained_path, tokenizer_pretrained="bert-base-uncased", sam_model_type="vit_h", sam_checkpoint = "../models/sam_vit_h_4b8939.pth", half=True):
+    tokenizer = BertTokenizer.from_pretrained(tokenizer_pretrained, do_lower_case=True)
     
     param = {
         "top_n_bbox": 4,

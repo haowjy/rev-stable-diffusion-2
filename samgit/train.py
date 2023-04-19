@@ -56,7 +56,7 @@ def get_small_transform_vit_default(cfg, crop=24):
     )
     return transform
 
-def prepare_model(pretrained_path=None, half=True):
+def prepare_model(pretrained_path=None, sam_model_type="vit_h", sam_checkpoint = "../models/sam_vit_h_4b8939.pth", half=True):
     cfg = {
         'crop_region_extend_in_datatransform': 4,
         'data_normalize': 'clip',
@@ -88,12 +88,9 @@ def prepare_model(pretrained_path=None, half=True):
     #     model.half()
     model.train()
     model.cuda()
-    
-    param = {
-        "top_n_bbox": 4,
-    }
+
     # preprocess object crops with sam
-    sam = sam_model_registry[param.get("sam_model_type", "vit_h")](checkpoint=param.get("sam_checkpoint", "../models/sam_vit_h_4b8939.pth")).half()
+    sam = sam_model_registry[sam_model_type](checkpoint=sam_checkpoint).half()
     # if half:
     #     sam.half()
     sam.eval()

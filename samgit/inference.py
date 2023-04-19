@@ -33,7 +33,7 @@ def get_image_transform(crop_size=224):
     transforms = Compose(trans)
     return transforms
 
-def prepare_model(pretrained_path, half=True):
+def prepare_model(pretrained_path, sam_model_type="vit_h", sam_checkpoint = "../models/sam_vit_h_4b8939.pth", half=True):
     tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True)
     
     param = {
@@ -50,7 +50,7 @@ def prepare_model(pretrained_path, half=True):
     model.eval()
     
     # preprocess object crops with sam
-    sam = sam_model_registry[param.get("sam_model_type", "vit_h")](checkpoint=param.get("sam_checkpoint", "../models/sam_vit_h_4b8939.pth")).half()
+    sam = sam_model_registry[sam_model_type](checkpoint=sam_checkpoint).half()
     # if half:
     #     sam.half()
     sam.eval()

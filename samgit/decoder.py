@@ -86,7 +86,7 @@ class SAMGitCaptioningModel(nn.Module):
         # shape: (batch_size, max_caption_length, vocab_size)
         if 'image' in batch:
             if isinstance(batch['image'], (list, tuple)):
-                features = [self.image_encoder(im, batch_img_crops) for im in batch['image']]
+                features = [self.image_encoder(im, batch_img_crops) for im in batch['image']] # Changed
                 
                 if self.num_image_with_embedding:
                     features = [f + e for f, e in zip(features, self.img_temperal_embedding)]

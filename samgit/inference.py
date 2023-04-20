@@ -65,28 +65,39 @@ def prepare_model(pretrained_path, tokenizer_pretrained="bert-base-uncased", sam
     
     return model, mask_generator, tokenizer, param
 
-def forward(model, mask_generator, tokenizer, param, image_files, prefix='', half=True):
+from generativeimage2text.train import (collate_fn, recursive_to_device)
+
+def forward(model, mask_generator, tokenizer, param, image_files, prefix='', half=True, main_crop_size=224):
     
     if isinstance(image_files, str):
         image_files = [image_files]
     
-    imgs = [load_image_by_pil(i) for i in image_files]
+    image_transform = get_image_transform(crop_size=main_crop_size)
     
-    image_transform = get_image_transform(crop_size=224)
-    imgs = [image_transform(i) for i in imgs]
-    imgs = [i.unsqueeze(0).cuda() for i in imgs]
-    
-    # prefix
-    max_text_len = 40
-    prefix_encoding = tokenizer(prefix,
-                                padding='do_not_pad',
-                                truncation=True,
-                                add_special_tokens=False,
-                                max_length=max_text_len)
-    payload = prefix_encoding['input_ids']
-    if len(payload) > max_text_len - 2:
-        payload = payload[-(max_text_len - 2):]
-    input_ids = [tokenizer.cls_token_id] + payload
+    all_data = []
+    for image_file in image_files:
+        if prefix != '':
+            max_text_len = 40
+            prefix_encoding = tokenizer(prefix,
+                                        padding='do_not_pad',
+                                        truncation=True,
+                                        add_special_tokens=False,
+                                        max_length=max_text_len)
+            payload = prefix_encoding['input_ids']
+            if len(payload) > max_text_len - 2:
+                payload = payload[-(max_text_len - 2):]
+            input_ids = [tokenizer.cls_token_id] + payload
+            data = {
+                'image': image_transform(load_image_by_pil(image_file)),
+                'prefix': torch.tensor(input_ids),
+            }
+        else:
+            data = {
+                'image': image_transform(load_image_by_pil(image_file)),
+            }
+        all_data.append(data)
+    data = collate_fn(all_data)
+    data = recursive_to_device(data, 'cuda')
     
     small_transform = get_image_transform(crop_size=24)
     
@@ -109,14 +120,14 @@ def forward(model, mask_generator, tokenizer, param, image_files, prefix='', hal
                     crops = torch.stack(new_crops)
                     crops.half()
                     batch_img_crops.append(crops)
-                
-            result = model({
-                'image': imgs,
-                'prefix': torch.tensor(input_ids).unsqueeze(0).cuda(),
-                }, batch_img_crops) # hard-coded to cuda
+
+            result = model(data, batch_img_crops) # hard-coded to cuda
             
-            # cap = tokenizer.decode(result['predictions'][0].tolist(), skip_special_tokens=True)
     return result
+
+def generate(result, tokenizer):
+    captions = tokenizer.batch_decode(result['predictions'], skip_special_tokens=True)
+    return captions
 
 import os
 import pandas as pd

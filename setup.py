@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = '0.1' 
+VERSION = '0.1.1' 
 DESCRIPTION = 'Generative Image2Text with Segment Anything Model'
 LONG_DESCRIPTION = 'My first Python package with a slightly longer description'
 

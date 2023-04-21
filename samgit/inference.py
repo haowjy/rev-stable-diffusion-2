@@ -115,13 +115,13 @@ def forward(model, mask_generator, tokenizer, param, image_files, prefix='', hal
                     new_crops.append(small_transform(crop))
 
                 if len(new_crops) == 0:
-                    batch_img_crops.append(None)
+                    batch_img_crops.append(torch.zeros((0, 3, 24, 24), dtype=torch.float16))
                 else:
                     crops = torch.stack(new_crops)
                     crops.half()
                     batch_img_crops.append(crops)
 
-            result = model(data, batch_img_crops) # hard-coded to cuda
+            result = model(data, *batch_img_crops) # hard-coded to cuda
             
     return result
 

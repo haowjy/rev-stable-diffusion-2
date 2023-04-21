@@ -137,13 +137,13 @@ def forward(model, mask_generator, tokenizer, cfg, param, image_files, captions,
                 new_crops.append(small_transform(crop))
 
             if len(new_crops) == 0:
-                batch_img_crops.append(None)
+                batch_img_crops.append(torch.zeros((0, 3, 24, 24), dtype=torch.float16))
             else:
                 crops = torch.stack(new_crops)
                 crops.half()
                 batch_img_crops.append(crops)
             
-        loss_dict = model(data, batch_img_crops) # hard-coded to cuda
+        loss_dict = model(data, *batch_img_crops) # hard-coded to cuda
     return loss_dict
 
 import os

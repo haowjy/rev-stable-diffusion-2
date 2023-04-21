@@ -77,8 +77,8 @@ class SAMGitCaptioningModel(nn.Module):
             )
         self.num_image_with_embedding = num_image_with_embedding
 
-    def forward(self, batch, batch_img_crops):
-        result = self.forward_one(batch, batch_img_crops, return_info=False)
+    def forward(self, batch, *batch_img_crops_args):
+        result = self.forward_one(batch, list(batch_img_crops_args), return_info=False)
         return result
 
         # shape: (batch_size, channels, height, width)

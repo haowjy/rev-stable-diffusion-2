@@ -51,7 +51,7 @@ class ImgObjEncoder(nn.Module):
         for b in range(len(batch_image_crops)): # batch
             # print(self.image_encoder)
             # print(batch_image_crops[b].device)
-            if batch_image_crops[b] is None:
+            if batch_image_crops[b] is None or batch_image_crops[b].numel() == 0:
                 HARD_IMG_FEATURE_SIZE = 2
                 batch_image_crop_features.append(torch.zeros((self.top_n_bbox*HARD_IMG_FEATURE_SIZE, self.visual_feature_size), device="cuda"))
                 continue

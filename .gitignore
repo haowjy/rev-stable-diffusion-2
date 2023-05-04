@@ -136,5 +136,7 @@ datasets/diffusiondb2m/*
 
 notebooks/output/*
 notebooks/checkpoints/*
+notebooks/pltimg/*
+notebooks/*.csv
 
 output/clip/*

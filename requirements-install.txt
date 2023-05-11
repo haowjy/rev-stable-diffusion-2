@@ -16,3 +16,9 @@ generativeimage2text
 
 pandas
 fastparquet
+
+datasets
+evaluate
+jiwer
+rouge_score
+sentence-transformers

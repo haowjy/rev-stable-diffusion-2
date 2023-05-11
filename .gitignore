@@ -133,10 +133,14 @@ models/*
 
 datasets/cococaps/*
 datasets/diffusiondb2m/*
+datasets/*.zip
+datasets/*
 
 notebooks/output/*
 notebooks/checkpoints/*
 notebooks/pltimg/*
 notebooks/*.csv
+
+wandb/
 
 output/clip/*

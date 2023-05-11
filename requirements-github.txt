@@ -16,3 +16,9 @@ generativeimage2text @ git+https://github.com/microsoft/GenerativeImage2Text.git
 
 pandas
 fastparquet
+
+datasets
+evaluate
+jiwer
+rouge_score
+sentence-transformers

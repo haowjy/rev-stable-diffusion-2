@@ -13,3 +13,9 @@ boto3
 
 pandas
 fastparquet
+
+datasets
+evaluate
+jiwer
+rouge_score
+sentence-transformers
